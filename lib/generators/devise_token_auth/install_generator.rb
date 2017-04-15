@@ -13,7 +13,7 @@ module DeviseTokenAuth
 
     def copy_migrations
       if mongoid?
-        say_status("skipped", "Migration 'devise_token_auth_create_#{ user_class.underscore }' is a mongoid document")
+        say_status("skipped", "Migration 'devise_token_auth_create_#{ user_class.underscore }' not needed -- mongoid document")
       elsif self.class.migration_exists?("db/migrate", "devise_token_auth_create_#{ user_class.underscore }")
         say_status("skipped", "Migration 'devise_token_auth_create_#{ user_class.underscore }' already exists")
       else
