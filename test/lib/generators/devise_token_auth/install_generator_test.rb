@@ -179,5 +179,37 @@ module DeviseTokenAuth
         end
       end
     end
+
+    describe 'no errors thrown for mongoid user model' do
+      setup :prepare_destination
+
+      before do
+        @dir = File.join(destination_root, "app", "models")
+
+        @fname = File.join(@dir, "user.rb")
+
+        # make dir if not exists
+        FileUtils.mkdir_p(@dir)
+
+        @f = File.open(@fname, 'w') {|f|
+          f.write <<-RUBY
+            class User < ActionController::Base
+              include Mongoid::Document
+              def whatever
+                puts 'whatever'
+              end
+            end
+          RUBY
+        }
+      end
+
+      after do
+        File.delete(@fname)
+      end
+
+      test 'check if mongoid document detected' do
+        assert generator.send(:mongoid?)
+      end
+    end
   end
 end

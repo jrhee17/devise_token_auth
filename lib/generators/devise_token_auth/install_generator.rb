@@ -12,7 +12,9 @@ module DeviseTokenAuth
     end
 
     def copy_migrations
-      if self.class.migration_exists?("db/migrate", "devise_token_auth_create_#{ user_class.underscore }")
+      if mongoid?
+        say_status("skipped", "Migration 'devise_token_auth_create_#{ user_class.underscore }' is a mongoid document")
+      elsif self.class.migration_exists?("db/migrate", "devise_token_auth_create_#{ user_class.underscore }")
         say_status("skipped", "Migration 'devise_token_auth_create_#{ user_class.underscore }' already exists")
       else
         migration_template(
@@ -29,7 +31,7 @@ module DeviseTokenAuth
       else
         inclusion = "include DeviseTokenAuth::Concerns::User"
         unless parse_file_for_line(fname, inclusion)
-          
+
           active_record_needle = (Rails::VERSION::MAJOR == 5) ? 'ApplicationRecord' : 'ActiveRecord::Base'
           inject_into_file fname, after: "class #{user_class} < #{active_record_needle}\n" do <<-'RUBY'
   # Include default devise modules.
@@ -147,6 +149,13 @@ module DeviseTokenAuth
 
     def mysql_correct_version?
       database_version > '5.7.7'
+    end
+
+    def mongoid?
+      fname = "app/models/#{ user_class.underscore }.rb"
+      if File.exist?(File.join(destination_root, fname))
+       return true if parse_file_for_line(fname, 'include Mongoid::Document')
+      end
     end
 
     def database_name
