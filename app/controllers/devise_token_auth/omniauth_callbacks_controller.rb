@@ -8,7 +8,7 @@ module DeviseTokenAuth
     # intermediary route for successful omniauth authentication. omniauth does
     # not support multiple models, so we must resort to this terrible hack.
     def redirect_callbacks
-
+      p 'redirect_callbacks'
       # derive target redirect route from 'resource_class' param, which was set
       # before authentication.
       devise_mapping = [request.env['omniauth.params']['namespace_name'],
@@ -79,9 +79,9 @@ module DeviseTokenAuth
     # break out provider attribute assignment for easy method extension
     def assign_provider_attrs(user, auth_hash)
       user.assign_attributes({
-        nickname: auth_hash['info']['nickname'],
-        name:     auth_hash['info']['name'],
-        image:    auth_hash['info']['image'],
+        # nickname: auth_hash['info']['nickname'],
+        # name:     auth_hash['info']['name'],
+        # image:    auth_hash['info']['image'],
         email:    auth_hash['info']['email']
       })
     end

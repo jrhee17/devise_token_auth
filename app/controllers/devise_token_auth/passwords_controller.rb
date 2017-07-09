@@ -34,14 +34,16 @@ module DeviseTokenAuth
         @email = resource_params[:email]
       end
 
-      q = "uid = ? AND provider='email'"
-
-      # fix for mysql default case insensitivity
-      if ActiveRecord::Base.connection.adapter_name.downcase.starts_with? 'mysql'
-        q = "BINARY uid = ? AND provider='email'"
+      if mongoid?
+        @resource = resource_class.where(:email=> @email).first
+      else
+        q = "uid = ? AND provider='email'"
+        # fix for mysql default case insensitivity
+        if ActiveRecord::Base.connection.adapter_name.downcase.starts_with? 'mysql'
+          q = "BINARY uid = ? AND provider='email'"
+        end
+        @resource = resource_class.where(q, @email).first
       end
-
-      @resource = resource_class.where(q, @email).first
 
       @errors = nil
       @error_status = 400
@@ -227,6 +229,10 @@ module DeviseTokenAuth
 
     def password_resource_params
       params.permit(*params_for_resource(:account_update))
+    end
+
+    def mongoid?
+      resource_class < Mongoid::Document
     end
 
   end

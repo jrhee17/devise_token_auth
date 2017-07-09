@@ -4,10 +4,14 @@ module DeviseTokenAuth
     before_action :validate_sign_up_params, :only => :create
     before_action :validate_account_update_params, :only => :update
     skip_after_action :update_auth_header, :only => [:create, :destroy]
+    # skip_before_filter :authenticate_user!, :only => [:create]
 
     def create
+      p 'DeviseTokenAuth RegistrationsController sign_up_params: ', sign_up_params
       @resource            = resource_class.new(sign_up_params)
-      @resource.provider   = "email"
+
+      p 'DeviseTokenAuth RegistrationsController create', @resource.as_json
+      @resource.provider   = "email" if !mongoid?
 
       # honor devise configuration for case_insensitive_keys
       if resource_class.case_insensitive_keys.include?(:email)
@@ -131,6 +135,8 @@ module DeviseTokenAuth
     end
 
     def render_create_error
+      p 'resource_data', resource_data
+      p 'resource_errors', resource_errors
       render json: {
         status: 'error',
         data:   resource_data,
@@ -183,6 +189,10 @@ module DeviseTokenAuth
 
     private
 
+    def mongoid?
+      resource_class < Mongoid::Document
+    end
+
     def resource_update_method
       if DeviseTokenAuth.check_current_password_before_update == :attributes
         "update_with_password"
@@ -196,6 +206,7 @@ module DeviseTokenAuth
     end
 
     def validate_sign_up_params
+      p 'validate_sign_up_params'
       validate_post_data sign_up_params, I18n.t("errors.messages.validate_sign_up_params")
     end
 

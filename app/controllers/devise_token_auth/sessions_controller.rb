@@ -3,15 +3,19 @@ module DeviseTokenAuth
   class SessionsController < DeviseTokenAuth::ApplicationController
     before_action :set_user_by_token, :only => [:destroy]
     after_action :reset_session, :only => [:destroy]
+    # skip_before_filter :authenticate_user!, :only => [:create, :destroy]
 
     def new
+      print 'sessions_controller create'
       render_new_error
     end
 
     def create
+      print 'sessions_controller create: ', resource_params
       # Check
       field = (resource_params.keys.map(&:to_sym) & resource_class.authentication_keys).first
 
+      print 'sessions_controller create field: ', field
       @resource = nil
       if field
         q_value = resource_params[field]
@@ -20,13 +24,21 @@ module DeviseTokenAuth
           q_value.downcase!
         end
 
-        q = "#{field.to_s} = ? AND provider='email'"
+        print 'resource_class.mongoid?: ', mongoid? , '\n'
 
-        if ActiveRecord::Base.connection.adapter_name.downcase.starts_with? 'mysql'
-          q = "BINARY " + q
+        if mongoid?
+          @resource = resource_class.where(:email => q_value).first
+          p 'mongoid? @resource: ', @resource
+        else
+          q = "#{field.to_s} = ? AND provider='email'"
+
+          if ActiveRecord::Base.connection.adapter_name.downcase.starts_with? 'mysql'
+            q = "BINARY " + q
+          end
+
+          @resource = resource_class.where(q, q_value).first
         end
 
-        @resource = resource_class.where(q, q_value).first
       end
 
       if @resource && valid_params?(field, q_value) && (!@resource.respond_to?(:active_for_authentication?) || @resource.active_for_authentication?)
@@ -39,6 +51,7 @@ module DeviseTokenAuth
         @client_id = SecureRandom.urlsafe_base64(nil, false)
         @token     = SecureRandom.urlsafe_base64(nil, false)
 
+        p '@resource.tokens: ', @resource.tokens
         @resource.tokens[@client_id] = {
           token: BCrypt::Password.create(@token),
           expiry: (Time.now + DeviseTokenAuth.token_lifespan).to_i
@@ -112,6 +125,7 @@ module DeviseTokenAuth
     end
 
     def render_create_success
+      pp 'render_create_success headers: ', response.headers
       render json: {
         data: resource_data(resource_json: @resource.token_validation_response)
       }
@@ -147,6 +161,10 @@ module DeviseTokenAuth
 
     def resource_params
       params.permit(*params_for_resource(:sign_in))
+    end
+
+    def mongoid?
+      resource_class < Mongoid::Document
     end
 
   end

@@ -11,3 +11,6 @@ coverage
 .idea
 .irb_history
 .ruby-version
+.DS_Store
+.byebug_history
+

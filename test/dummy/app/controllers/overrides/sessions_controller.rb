@@ -3,6 +3,7 @@ module Overrides
     OVERRIDE_PROOF = "(^^,)"
 
     def create
+      p 'DeviseTokenAuth::SessionsController'
       @resource = resource_class.find_by_email(resource_params[:email])
 
       if @resource and valid_params?(:email, resource_params[:email]) and @resource.valid_password?(resource_params[:password]) and @resource.confirmed?

@@ -1,6 +1,8 @@
 begin
   require 'bundler/setup'
-rescue LoadError
+rescue LoadError => error
+  $!.backtrace.each {|ele| p ele}
+  p $!.message
   puts 'You must `gem install bundler` and `bundle install` to run rake tasks'
 end
 

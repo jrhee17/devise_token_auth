@@ -35,6 +35,8 @@ group :development, :test do
   gem 'faker'
   gem 'fuzz_ball'
   gem 'mocha'
+  gem 'byebug'
+  gem 'rails-controller-testing'
 end
 
 # code coverage, metrics

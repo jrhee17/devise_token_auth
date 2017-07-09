@@ -4,9 +4,15 @@ module DeviseTokenAuth::Concerns::User
   extend ActiveSupport::Concern
 
   def self.tokens_match?(token_hash, token)
+    p 'token_hash: ', token_hash
+    p 'token: ', token
+    p '@token_equality_cache: ', @token_equality_cache
     @token_equality_cache ||= {}
 
     key = "#{token_hash}/#{token}"
+
+    p 'key: ', key
+    p '@token_equality_cache[key]: ', @token_equality_cache[key]
     result = @token_equality_cache[key] ||= (::BCrypt::Password.new(token_hash) == token)
     if @token_equality_cache.size > 10000
       @token_equality_cache = {}
@@ -23,7 +29,7 @@ module DeviseTokenAuth::Concerns::User
       self.devise_modules.delete(:omniauthable)
     end
 
-    unless tokens_has_json_column_type?
+    unless mongoid? or tokens_has_json_column_type?
       serialize :tokens, JSON
     end
 
@@ -88,6 +94,7 @@ module DeviseTokenAuth::Concerns::User
 
       token
     end
+
   end
 
   module ClassMethods
@@ -101,19 +108,27 @@ module DeviseTokenAuth::Concerns::User
     def database_exists?
       begin
         ActiveRecord::Base.connection
+        true
       rescue ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished
         false
       end
-      true
     end
+
+    def mongoid?
+      self < Mongoid::Document
+    end
+
   end
 
 
   def valid_token?(token, client_id='default')
+    p 'valid_token?'
     client_id ||= 'default'
 
+    p 'self.tokens[client_id]: ', self.tokens[client_id]
     return false unless self.tokens[client_id]
 
+    p 'token_is_current?(token, client_id): ', token_is_current?(token, client_id)
     return true if token_is_current?(token, client_id)
     return true if token_can_be_reused?(token, client_id)
 
@@ -133,6 +148,9 @@ module DeviseTokenAuth::Concerns::User
     # ghetto HashWithIndifferentAccess
     expiry     = self.tokens[client_id]['expiry'] || self.tokens[client_id][:expiry]
     token_hash = self.tokens[client_id]['token'] || self.tokens[client_id][:token]
+    p 'expiry: ', expiry
+    p 'token_hash: ', token_hash
+    p 'DateTime.strptime(expiry.to_s, ) > Time.now: ', DateTime.strptime(expiry.to_s, '%s') > Time.now
 
     return true if (
       # ensure that expiry and token are set
@@ -159,7 +177,7 @@ module DeviseTokenAuth::Concerns::User
       updated_at && last_token &&
 
       # ensure that previous token falls within the batch buffer throttle time of the last request
-      Time.parse(updated_at) > Time.now - DeviseTokenAuth.batch_request_buffer_throttle &&
+      Time.parse(updated_at.to_s) > Time.now - DeviseTokenAuth.batch_request_buffer_throttle &&
 
       # ensure that the token is valid
       ::BCrypt::Password.new(last_token) == token
@@ -234,9 +252,11 @@ module DeviseTokenAuth::Concerns::User
   end
 
   def token_validation_response
-    self.as_json(except: [
+    p 'token_validation_response starting'
+    ret_obj = self.as_json(except: [
       :tokens, :created_at, :updated_at
     ])
+    ret_obj
   end
 
 

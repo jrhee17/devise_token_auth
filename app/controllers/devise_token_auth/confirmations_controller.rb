@@ -1,5 +1,8 @@
 module DeviseTokenAuth
   class ConfirmationsController < DeviseTokenAuth::ApplicationController
+
+    # skip_before_filter :authenticate_user!, :only => [:show]
+
     def show
       @resource = resource_class.confirm_by_token(params[:confirmation_token])
 
