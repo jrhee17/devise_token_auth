@@ -27,7 +27,7 @@ module DeviseTokenAuth
         print 'resource_class.mongoid?: ', mongoid? , '\n'
 
         if mongoid?
-          @resource = resource_class.where(:email => q_value).first
+          @resource = resource_class.where(:email => q_value, :provider => 'email').first
           p 'mongoid? @resource: ', @resource
         else
           q = "#{field.to_s} = ? AND provider='email'"
